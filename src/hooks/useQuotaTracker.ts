@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 
 interface QuotaUsage {
@@ -13,7 +13,6 @@ interface QuotaData {
 const DAILY_QUOTA = 10000;
 const QUOTA_THRESHOLD = 9600; // Switch key before hitting limit
 const STORAGE_KEY = 'youtube-api-quota';
-const PT_OFFSET = -8; // Pacific Time offset from UTC
 
 interface UseQuotaTrackerReturn {
   getQuotaUsage: (apiKey: string) => { used: number; remaining: number; percentage: number };

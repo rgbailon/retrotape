@@ -142,7 +142,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       width: '0',
       videoId: vidId,
       playerVars: {
-        autoplay: 1,
+        autoplay: 0,
         controls: 0,
         disablekb: 1,
         fs: 0,
@@ -155,8 +155,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       events: {
         onReady: (event) => {
           event.target.setVolume(volume);
-          event.target.playVideo();
-          startProgressTracking();
+          // Don't auto-play here, let the isPlaying effect handle it
         },
         onStateChange: (event) => {
           if (event.data === window.YT.PlayerState.ENDED) {
@@ -208,7 +207,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
     };
   }, []);
 
-  // Handle video changes
+  // Handle video changes - load new video without recreating player
   useEffect(() => {
     if (!videoId) {
       stopProgressTracking();
@@ -221,17 +220,41 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
 
     currentVideoIdRef.current = videoId;
 
-    if (apiReadyRef.current || (window.YT && window.YT.Player)) {
+    if (playerRef.current && apiReadyRef.current) {
+      // Player exists, just load the new video
+      try {
+        playerRef.current.loadVideoById(videoId);
+      } catch {
+        // If load fails, create new player
+        createPlayer(videoId);
+      }
+    } else if (apiReadyRef.current || (window.YT && window.YT.Player)) {
       createPlayer(videoId);
     }
   }, [videoId, createPlayer, stopProgressTracking]);
 
-  // Handle play/pause
+  // Track if we need to auto-play after video loads
+  const shouldAutoPlayRef = useRef(false);
+  
+  // Handle play/pause - immediate response
   useEffect(() => {
-    if (!playerRef.current) return;
+    if (!playerRef.current) {
+      // If player not ready yet, mark that we should auto-play when ready
+      if (isPlaying) {
+        shouldAutoPlayRef.current = true;
+      }
+      return;
+    }
+
+    shouldAutoPlayRef.current = false;
 
     try {
+      const state = playerRef.current.getPlayerState();
+      
       if (isPlaying) {
+        if (state === window.YT.PlayerState.PLAYING) {
+          return; // Already playing
+        }
         playerRef.current.playVideo();
         startProgressTracking();
       } else {
@@ -242,6 +265,30 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       // Player not ready
     }
   }, [isPlaying, startProgressTracking, stopProgressTracking]);
+
+  // Auto-play when player becomes ready if we should be playing
+  useEffect(() => {
+    if (!playerRef.current) return;
+    
+    const handleReady = () => {
+      if (shouldAutoPlayRef.current && isPlaying) {
+        try {
+          playerRef.current?.playVideo();
+          startProgressTracking();
+          shouldAutoPlayRef.current = false;
+        } catch {
+          // Ignore
+        }
+      }
+    };
+    
+    // Check immediately
+    handleReady();
+    
+    // Also check after a short delay in case player state wasn't ready yet
+    const timer = setTimeout(handleReady, 300);
+    return () => clearTimeout(timer);
+  }, [isPlaying, startProgressTracking]);
 
   return (
     <div 

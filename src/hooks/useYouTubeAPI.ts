@@ -1,12 +1,11 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { VideoItem, PlaylistSearchItem, YouTubeSearchResult, YouTubePlaylistItemResult } from '../types';
 import { useQuotaTracker } from './useQuotaTracker';
 
-const DAILY_QUOTA = 10000;
 const QUOTA_THRESHOLD = 9600;
 
 interface UseYouTubeAPIReturn {
-  searchMusic: (query: string) => Promise<VideoItem[]>;
+  searchMusic: (query: string) => Promise<PlaylistSearchItem[]>;
   searchPodcastPlaylists: (query: string) => Promise<PlaylistSearchItem[]>;
   getPlaylistItems: (playlistId: string) => Promise<VideoItem[]>;
   loading: boolean;
@@ -139,27 +138,53 @@ export const useYouTubeAPI = (apiKeys: string[]): UseYouTubeAPIReturn => {
     }
   }, [getCurrentKey, checkAndRotate, recordUsage, rotateKey, getQuotaUsage, apiKeys.length]);
 
-  // Search for music videos (100 units per search)
-  const searchMusic = useCallback(async (query: string): Promise<VideoItem[]> => {
-    const searchQuery = `${query} official audio OR official music OR lyrics`;
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&q=${encodeURIComponent(searchQuery)}&type=video&videoCategoryId=10&key=demo`;
+  // Search for music playlists (100 units per search + extra for details)
+  const searchMusic = useCallback(async (query: string): Promise<PlaylistSearchItem[]> => {
+    const searchQuery = `${query} playlist`;
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&q=${encodeURIComponent(searchQuery)}&type=playlist&key=demo`;
     
     const result = await makeRequest(
       url,
       100,
-      (data) => {
-        return data.items
-          .filter((item: YouTubeSearchResult) => item.id.videoId)
-          .map((item: YouTubeSearchResult) => ({
-            id: item.id.videoId!,
-            title: item.snippet.title,
-            thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default.url,
-            channelTitle: item.snippet.channelTitle,
-          }));
-      }
+      (data) => data,
+      () => {}
     );
 
-    return result || [];
+    if (!result) return [];
+
+    const playlistIds = result.items
+      .filter((item: YouTubeSearchResult) => item.id.playlistId)
+      .map((item: YouTubeSearchResult) => item.id.playlistId)
+      .join(',');
+
+    let itemCounts: Record<string, number> = {};
+    
+    if (playlistIds) {
+      const detailsUrl = `https://www.googleapis.com/youtube/v3/playlists?part=contentDetails&id=${playlistIds}&key=demo`;
+      await makeRequest(
+        detailsUrl,
+        result.items.length,
+        (detailsData) => {
+          if (detailsData.items) {
+            detailsData.items.forEach((item: { id: string; contentDetails: { itemCount: number } }) => {
+              itemCounts[item.id] = item.contentDetails.itemCount;
+            });
+          }
+          return detailsData;
+        }
+      );
+    }
+
+    return result.items
+      .filter((item: YouTubeSearchResult) => item.id.playlistId)
+      .map((item: YouTubeSearchResult) => ({
+        id: item.id.playlistId!,
+        title: item.snippet.title,
+        thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default.url,
+        channelTitle: item.snippet.channelTitle,
+        itemCount: itemCounts[item.id.playlistId!] || 0,
+        description: item.snippet.description,
+      }));
   }, [makeRequest]);
 
   // Search for podcast playlists (100 units per search + extra for details)

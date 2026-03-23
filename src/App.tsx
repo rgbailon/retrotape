@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { VideoItem, Playlist, PlayerState, PlaylistSearchItem, SearchTab } from './types';
+import { PlaylistSearchItem, Playlist, PlayerState, SearchTab } from './types';
 import { useYouTubeAPI } from './hooks/useYouTubeAPI';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { CassettePlayer } from './components/CassettePlayer';
@@ -21,10 +21,11 @@ const App: React.FC = () => {
   // Search state
   const [activeTab, setActiveTab] = useState<SearchTab>('music');
   const [searchQuery, setSearchQuery] = useState('');
-  const [musicResults, setMusicResults] = useState<VideoItem[]>([]);
+  const [musicResults, setMusicResults] = useState<PlaylistSearchItem[]>([]);
   const [podcastResults, setPodcastResults] = useState<PlaylistSearchItem[]>([]);
-  const [selectedMusicItems, setSelectedMusicItems] = useState<VideoItem[]>([]);
   const [loadingPlaylistId, setLoadingPlaylistId] = useState<string | undefined>();
+  const [playingPlaylistId, setPlayingPlaylistId] = useState<string | undefined>();
+  const [savingPlaylistId, setSavingPlaylistId] = useState<string | undefined>();
   
   // Playlists
   const [playlists, setPlaylists] = useLocalStorage<Playlist[]>('saved-playlists', []);
@@ -58,35 +59,58 @@ const App: React.FC = () => {
     }
   };
 
-  // Play a single music track from search results
-  const handlePlayMusicTrack = useCallback((item: VideoItem) => {
-    const tempPlaylist: Playlist = {
-      id: `temp-${item.id}`,
-      name: 'Now Playing',
-      type: 'music',
-      items: [item],
-      createdAt: Date.now(),
-    };
+  // Play a music playlist from search results
+  const handlePlayMusicPlaylist = useCallback(async (playlistInfo: PlaylistSearchItem) => {
+    setPlayingPlaylistId(playlistInfo.id);
+    setLoadingPlaylistId(playlistInfo.id);
     
-    setPlayerState({
-      isPlaying: true,
-      currentPlaylist: tempPlaylist,
-      currentIndex: 0,
-      progress: 0,
-      duration: 0,
-    });
-  }, []);
-
-  // Add music track to selection
-  const handleAddToSelection = useCallback((item: VideoItem) => {
-    setSelectedMusicItems(prev => {
-      const exists = prev.some(i => i.id === item.id);
-      if (exists) {
-        return prev.filter(i => i.id !== item.id);
+    try {
+      const items = await getPlaylistItems(playlistInfo.id);
+      
+      if (items.length > 0) {
+        const tempPlaylist: Playlist = {
+          id: `temp-${playlistInfo.id}`,
+          name: playlistInfo.title,
+          type: 'music',
+          items,
+          createdAt: Date.now(),
+        };
+        
+        setPlayerState({
+          isPlaying: true,
+          currentPlaylist: tempPlaylist,
+          currentIndex: 0,
+          progress: 0,
+          duration: 0,
+        });
       }
-      return [...prev, item];
-    });
-  }, []);
+    } finally {
+      setLoadingPlaylistId(undefined);
+    }
+  }, [getPlaylistItems]);
+
+  // Save a music playlist from search results
+  const handleSaveMusicPlaylist = useCallback(async (playlistInfo: PlaylistSearchItem) => {
+    setSavingPlaylistId(playlistInfo.id);
+    
+    try {
+      const items = await getPlaylistItems(playlistInfo.id);
+      
+      if (items.length > 0) {
+        const newPlaylist: Playlist = {
+          id: `music-${playlistInfo.id}-${Date.now()}`,
+          name: playlistInfo.title,
+          type: 'music',
+          items,
+          createdAt: Date.now(),
+        };
+        
+        setPlaylists(prev => [newPlaylist, ...prev]);
+      }
+    } finally {
+      setSavingPlaylistId(undefined);
+    }
+  }, [getPlaylistItems, setPlaylists]);
 
   // Add podcast playlist to saved playlists
   const handleAddPodcastPlaylist = useCallback(async (playlistInfo: PlaylistSearchItem) => {
@@ -110,18 +134,6 @@ const App: React.FC = () => {
       setLoadingPlaylistId(undefined);
     }
   }, [getPlaylistItems, setPlaylists]);
-
-  // Save music playlist
-  const handleSavePlaylist = useCallback((name: string, items: VideoItem[], type: 'music' | 'podcast') => {
-    const newPlaylist: Playlist = {
-      id: `${type}-${Date.now()}`,
-      name,
-      type,
-      items,
-      createdAt: Date.now(),
-    };
-    setPlaylists(prev => [newPlaylist, ...prev]);
-  }, [setPlaylists]);
 
   // Play a saved playlist
   const handlePlayPlaylist = useCallback((playlist: Playlist) => {
@@ -217,7 +229,6 @@ const App: React.FC = () => {
   }, [setVolume]);
 
   const currentTrack = playerState.currentPlaylist?.items[playerState.currentIndex];
-  const currentlyPlayingId = currentTrack?.id;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-zinc-950 to-black">
@@ -346,11 +357,8 @@ const App: React.FC = () => {
             {/* Saved Playlists */}
             <PlaylistManager
               playlists={playlists}
-              onSavePlaylist={handleSavePlaylist}
               onPlayPlaylist={handlePlayPlaylist}
               onDeletePlaylist={handleDeletePlaylist}
-              selectedItems={selectedMusicItems}
-              onClearSelection={() => setSelectedMusicItems([])}
               currentPlaylistId={playerState.currentPlaylist?.id}
               activeTab={activeTab}
             />
@@ -450,10 +458,10 @@ const App: React.FC = () => {
               <SearchResults
                 type="music"
                 results={musicResults}
-                onPlay={handlePlayMusicTrack}
-                onAddToQueue={handleAddToSelection}
-                currentlyPlaying={currentlyPlayingId}
-                selectedItems={selectedMusicItems}
+                onPlay={handlePlayMusicPlaylist}
+                onSavePlaylist={handleSaveMusicPlaylist}
+                playingPlaylistId={playingPlaylistId}
+                savingPlaylistId={savingPlaylistId}
               />
             )}
             

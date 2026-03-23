@@ -1,42 +1,25 @@
 import React, { useState } from 'react';
-import { Playlist, VideoItem } from '../types';
+import { Playlist } from '../types';
 
 interface PlaylistManagerProps {
   playlists: Playlist[];
-  onSavePlaylist: (name: string, items: VideoItem[], type: 'music' | 'podcast') => void;
   onPlayPlaylist: (playlist: Playlist) => void;
   onDeletePlaylist: (id: string) => void;
-  selectedItems: VideoItem[];
-  onClearSelection: () => void;
   currentPlaylistId?: string;
   activeTab: 'music' | 'podcast';
 }
 
 export const PlaylistManager: React.FC<PlaylistManagerProps> = ({
   playlists,
-  onSavePlaylist,
   onPlayPlaylist,
   onDeletePlaylist,
-  selectedItems,
-  onClearSelection,
   currentPlaylistId,
   activeTab,
 }) => {
-  const [playlistName, setPlaylistName] = useState('');
-  const [showSaveModal, setShowSaveModal] = useState(false);
   const [expandedPlaylist, setExpandedPlaylist] = useState<string | null>(null);
 
   const musicPlaylists = playlists.filter(p => p.type === 'music');
   const podcastPlaylists = playlists.filter(p => p.type === 'podcast');
-
-  const handleSave = () => {
-    if (playlistName.trim() && selectedItems.length > 0) {
-      onSavePlaylist(playlistName.trim(), selectedItems, 'music');
-      setPlaylistName('');
-      setShowSaveModal(false);
-      onClearSelection();
-    }
-  };
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString();
@@ -174,90 +157,6 @@ export const PlaylistManager: React.FC<PlaylistManagerProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Selection bar - only show in music tab when items are selected */}
-      {activeTab === 'music' && selectedItems.length > 0 && (
-        <div className="bg-gradient-to-r from-orange-900/50 to-amber-900/50 rounded-lg p-4 border border-orange-500/50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 flex items-center justify-center text-white font-bold">
-                {selectedItems.length}
-              </div>
-              <div>
-                <p className="text-white font-medium">Songs Selected</p>
-                <p className="text-gray-400 text-xs">Ready to save as playlist</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <button
-                onClick={onClearSelection}
-                className="px-3 py-1.5 rounded bg-zinc-700 hover:bg-zinc-600 text-white text-sm transition-all"
-              >
-                Clear
-              </button>
-              <button
-                onClick={() => setShowSaveModal(true)}
-                className="px-4 py-1.5 rounded bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-400 hover:to-yellow-400 text-white text-sm font-medium transition-all"
-              >
-                💾 Save Playlist
-              </button>
-            </div>
-          </div>
-          
-          {/* Selected items preview */}
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
-            {selectedItems.slice(0, 6).map((item) => (
-              <div key={item.id} className="flex-shrink-0 w-12 h-12 rounded overflow-hidden">
-                <img src={item.thumbnail} alt="" className="w-full h-full object-cover" />
-              </div>
-            ))}
-            {selectedItems.length > 6 && (
-              <div className="flex-shrink-0 w-12 h-12 rounded bg-zinc-700 flex items-center justify-center text-white text-xs">
-                +{selectedItems.length - 6}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Save modal */}
-      {showSaveModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-900 rounded-xl p-6 w-full max-w-md border border-zinc-700">
-            <h3 className="text-xl font-bold bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent mb-4">Save Music Playlist</h3>
-            
-            <input
-              type="text"
-              value={playlistName}
-              onChange={(e) => setPlaylistName(e.target.value)}
-              placeholder="Enter playlist name..."
-              className="w-full px-4 py-3 rounded-lg bg-black text-white placeholder-gray-400 border border-zinc-700 focus:border-orange-500 focus:outline-none"
-              autoFocus
-            />
-            
-            <p className="text-gray-400 text-sm mt-2">
-              {selectedItems.length} songs will be saved
-            </p>
-            
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowSaveModal(false)}
-                className="flex-1 px-4 py-2 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={!playlistName.trim()}
-                className="flex-1 px-4 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-yellow-500 hover:from-orange-500 hover:to-yellow-400 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-medium transition-all"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Playlist sections - show relevant section based on active tab */}
       {activeTab === 'music' ? (
         <>

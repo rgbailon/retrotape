@@ -1,13 +1,13 @@
 import React from 'react';
-import { VideoItem, PlaylistSearchItem } from '../types';
+import { PlaylistSearchItem } from '../types';
 
 interface MusicSearchResultsProps {
   type: 'music';
-  results: VideoItem[];
-  onPlay: (item: VideoItem) => void;
-  onAddToQueue: (item: VideoItem) => void;
-  currentlyPlaying?: string;
-  selectedItems: VideoItem[];
+  results: PlaylistSearchItem[];
+  onPlay: (item: PlaylistSearchItem) => void;
+  onSavePlaylist: (item: PlaylistSearchItem) => void;
+  playingPlaylistId?: string;
+  savingPlaylistId?: string;
 }
 
 interface PodcastSearchResultsProps {
@@ -29,37 +29,38 @@ export const SearchResults: React.FC<SearchResultsProps> = (props) => {
   }
 
   if (props.type === 'music') {
-    const { results, onPlay, onAddToQueue, currentlyPlaying, selectedItems } = props;
+    const { results, onPlay, onSavePlaylist, playingPlaylistId, savingPlaylistId } = props;
     
     return (
       <div className="space-y-2">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent">🎵 Music Results</h3>
-          <span className="text-sm text-gray-400">{results.length} tracks found</span>
+          <h3 className="text-lg font-semibold bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent">🎵 Music Playlists</h3>
+          <span className="text-sm text-gray-400">{results.length} playlists found</span>
         </div>
         
-        {results.map((item) => {
-          const isPlaying = currentlyPlaying === item.id;
-          const isSelected = selectedItems.some(s => s.id === item.id);
+        {results.map((playlist) => {
+          const isPlaying = playingPlaylistId === playlist.id;
+          const isSaving = savingPlaylistId === playlist.id;
           
           return (
             <div
-              key={item.id}
+              key={playlist.id}
               className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
                 isPlaying 
                   ? 'bg-gradient-to-r from-orange-900/50 to-yellow-900/50 border border-orange-500' 
-                  : isSelected
-                  ? 'bg-amber-900/30 border border-amber-500'
                   : 'bg-black/60 hover:bg-zinc-800/70 border border-zinc-800'
               }`}
             >
               {/* Thumbnail */}
               <div className="relative flex-shrink-0">
                 <img
-                  src={item.thumbnail}
-                  alt={item.title}
-                  className="w-16 h-12 object-cover rounded"
+                  src={playlist.thumbnail}
+                  alt={playlist.title}
+                  className="w-20 h-14 object-cover rounded"
                 />
+                <div className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-xs text-white">
+                  {playlist.itemCount} songs
+                </div>
                 {isPlaying && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded">
                     <div className="flex gap-0.5">
@@ -73,15 +74,18 @@ export const SearchResults: React.FC<SearchResultsProps> = (props) => {
               
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <h4 className="text-white font-medium truncate text-sm">{item.title}</h4>
-                <p className="text-gray-400 text-xs truncate">{item.channelTitle}</p>
+                <h4 className="text-white font-medium truncate text-sm">{playlist.title}</h4>
+                <p className="text-gray-400 text-xs truncate">{playlist.channelTitle}</p>
+                {playlist.description && (
+                  <p className="text-gray-500 text-xs truncate mt-1">{playlist.description}</p>
+                )}
               </div>
               
               {/* Actions */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 {/* Play button */}
                 <button
-                  onClick={() => onPlay(item)}
+                  onClick={() => onPlay(playlist)}
                   className={`p-2 rounded-full transition-all ${
                     isPlaying
                       ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white'
@@ -101,17 +105,18 @@ export const SearchResults: React.FC<SearchResultsProps> = (props) => {
                   )}
                 </button>
                 
-                {/* Add to queue button */}
+                {/* Save button */}
                 <button
-                  onClick={() => onAddToQueue(item)}
+                  onClick={() => onSavePlaylist(playlist)}
+                  disabled={isSaving}
                   className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
-                    isSelected
-                      ? 'bg-amber-600 text-white'
+                    isSaving
+                      ? 'bg-gray-600 text-gray-400 cursor-wait'
                       : 'bg-zinc-700 hover:bg-amber-600 text-white'
                   }`}
-                  title={isSelected ? 'Added to selection' : 'Add to selection'}
+                  title="Save playlist"
                 >
-                  {isSelected ? '✓ Added' : '+ Add'}
+                  {isSaving ? '...' : '+ Save'}
                 </button>
               </div>
             </div>

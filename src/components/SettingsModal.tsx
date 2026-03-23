@@ -15,7 +15,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [inputKeys, setInputKeys] = useState<string[]>(apiKeys);
   const [showKey, setShowKey] = useState(false);
   const [showUsage, setShowUsage] = useState(false);
-  const { getQuotaUsage, getNextResetTime, getAllUsage } = useQuotaTracker();
+  const { getQuotaUsage, getNextResetTime } = useQuotaTracker();
 
   const [timeUntilReset, setTimeUntilReset] = useState(getNextResetTime());
 
