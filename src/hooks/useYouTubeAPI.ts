@@ -1,12 +1,25 @@
 import { useState, useCallback } from 'react';
 import { VideoItem, PlaylistSearchItem, YouTubeSearchResult, YouTubePlaylistItemResult } from '../types';
 
-export const useYouTubeAPI = (apiKey: string) => {
+export const useYouTubeAPI = (apiKeys: string[]) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentKeyIndex, setCurrentKeyIndex] = useState(0);
+
+  const getCurrentKey = useCallback(() => {
+    if (apiKeys.length === 0) return null;
+    return apiKeys[currentKeyIndex] || apiKeys[0];
+  }, [apiKeys, currentKeyIndex]);
+
+  const rotateKey = useCallback(() => {
+    if (apiKeys.length > 1) {
+      setCurrentKeyIndex((prev) => (prev + 1) % apiKeys.length);
+    }
+  }, [apiKeys.length]);
 
   // Search for music videos
   const searchMusic = useCallback(async (query: string): Promise<VideoItem[]> => {
+    const apiKey = getCurrentKey();
     if (!apiKey) {
       setError('Please set your YouTube API key in settings');
       return [];
@@ -23,6 +36,16 @@ export const useYouTubeAPI = (apiKey: string) => {
       const data = await response.json();
 
       if (data.error) {
+        // If quota exceeded or error, try next key
+        if (data.error.code === 429 || data.error.message?.includes('quota')) {
+          rotateKey();
+          if (apiKeys.length > 1) {
+            setError('API quota exceeded. Trying next key...');
+          } else {
+            throw new Error(data.error.message);
+          }
+          return [];
+        }
         throw new Error(data.error.message);
       }
 
@@ -42,10 +65,11 @@ export const useYouTubeAPI = (apiKey: string) => {
     } finally {
       setLoading(false);
     }
-  }, [apiKey]);
+  }, [getCurrentKey, rotateKey, apiKeys.length]);
 
   // Search for podcast playlists
   const searchPodcastPlaylists = useCallback(async (query: string): Promise<PlaylistSearchItem[]> => {
+    const apiKey = getCurrentKey();
     if (!apiKey) {
       setError('Please set your YouTube API key in settings');
       return [];
@@ -62,6 +86,15 @@ export const useYouTubeAPI = (apiKey: string) => {
       const data = await response.json();
 
       if (data.error) {
+        if (data.error.code === 429 || data.error.message?.includes('quota')) {
+          rotateKey();
+          if (apiKeys.length > 1) {
+            setError('API quota exceeded. Trying next key...');
+          } else {
+            throw new Error(data.error.message);
+          }
+          return [];
+        }
         throw new Error(data.error.message);
       }
 
@@ -103,10 +136,11 @@ export const useYouTubeAPI = (apiKey: string) => {
     } finally {
       setLoading(false);
     }
-  }, [apiKey]);
+  }, [getCurrentKey, rotateKey, apiKeys.length]);
 
   // Get all videos from a playlist
   const getPlaylistItems = useCallback(async (playlistId: string): Promise<VideoItem[]> => {
+    const apiKey = getCurrentKey();
     if (!apiKey) {
       setError('Please set your YouTube API key in settings');
       return [];
@@ -127,6 +161,15 @@ export const useYouTubeAPI = (apiKey: string) => {
         const data = await response.json();
 
         if (data.error) {
+          if (data.error.code === 429 || data.error.message?.includes('quota')) {
+            rotateKey();
+            if (apiKeys.length > 1) {
+              setError('API quota exceeded. Trying next key...');
+            } else {
+              throw new Error(data.error.message);
+            }
+            return [];
+          }
           throw new Error(data.error.message);
         }
 
@@ -150,7 +193,7 @@ export const useYouTubeAPI = (apiKey: string) => {
     } finally {
       setLoading(false);
     }
-  }, [apiKey]);
+  }, [getCurrentKey, rotateKey, apiKeys.length]);
 
   const clearError = useCallback(() => {
     setError(null);

@@ -11,7 +11,7 @@ import { YouTubePlayer, YouTubePlayerHandle } from './components/YouTubePlayer';
 
 const App: React.FC = () => {
   // Settings & API
-  const [apiKey, setApiKey] = useLocalStorage<string>('youtube-api-key', '');
+  const [apiKeys, setApiKeys] = useLocalStorage<string[]>('youtube-api-keys', []);
   const [showSettings, setShowSettings] = useState(false);
   const [playerStyle, setPlayerStyle] = useLocalStorage<'cassette' | 'walkman'>('player-style', 'cassette');
   
@@ -41,7 +41,7 @@ const App: React.FC = () => {
   const playerRef = useRef<YouTubePlayerHandle | null>(null);
   
   // YouTube API
-  const { searchMusic, searchPodcastPlaylists, getPlaylistItems, loading, error, clearError } = useYouTubeAPI(apiKey);
+  const { searchMusic, searchPodcastPlaylists, getPlaylistItems, loading, error, clearError } = useYouTubeAPI(apiKeys);
 
   // Search handlers
   const handleSearch = async () => {
@@ -247,9 +247,9 @@ const App: React.FC = () => {
               <button
                 onClick={() => setShowSettings(true)}
                 className={`p-2 rounded-full transition-all ${
-                  apiKey ? 'bg-gradient-to-r from-orange-600 to-yellow-500 hover:from-orange-500 hover:to-yellow-400' : 'bg-yellow-600 hover:bg-yellow-500 animate-pulse'
+                  apiKeys.length > 0 ? 'bg-gradient-to-r from-orange-600 to-yellow-500 hover:from-orange-500 hover:to-yellow-400' : 'bg-yellow-600 hover:bg-yellow-500 animate-pulse'
                 }`}
-                title={apiKey ? 'Settings' : 'Set API Key'}
+                title={apiKeys.length > 0 ? 'Settings' : 'Set API Key'}
               >
                 ⚙️
               </button>
@@ -432,7 +432,7 @@ const App: React.FC = () => {
             )}
 
             {/* No API key warning */}
-            {!apiKey && (
+            {apiKeys.length === 0 && (
               <div className="bg-amber-900/50 border border-amber-500 rounded-lg p-4 text-amber-200">
                 <p className="font-medium">⚠️ API Key Required</p>
                 <p className="text-sm mt-1">Please set your YouTube API key in settings to search for content.</p>
@@ -467,7 +467,7 @@ const App: React.FC = () => {
             )}
 
             {/* Empty state */}
-            {activeTab === 'music' && musicResults.length === 0 && !loading && apiKey && (
+            {activeTab === 'music' && musicResults.length === 0 && !loading && apiKeys.length > 0 && (
               <div className="text-center py-12 text-gray-400">
                 <div className="text-5xl mb-4">🎵</div>
                 <p className="text-lg">Search for music to get started</p>
@@ -475,7 +475,7 @@ const App: React.FC = () => {
               </div>
             )}
             
-            {activeTab === 'podcast' && podcastResults.length === 0 && !loading && apiKey && (
+            {activeTab === 'podcast' && podcastResults.length === 0 && !loading && apiKeys.length > 0 && (
               <div className="text-center py-12 text-gray-400">
                 <div className="text-5xl mb-4">🎙️</div>
                 <p className="text-lg">Search for podcast series</p>
@@ -505,8 +505,8 @@ const App: React.FC = () => {
       {/* Settings Modal */}
       {showSettings && (
         <SettingsModal
-          apiKey={apiKey}
-          onSave={setApiKey}
+          apiKeys={apiKeys}
+          onSave={setApiKeys}
           onClose={() => setShowSettings(false)}
         />
       )}

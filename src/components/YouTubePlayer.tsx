@@ -150,6 +150,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
         playsinline: 1,
         rel: 0,
         origin: window.location.origin,
+        host: 'https://www.youtube.com',
       },
       events: {
         onReady: (event) => {
