@@ -242,7 +242,7 @@ export const useYouTubeAPI = (apiKeys: string[]): UseYouTubeAPIReturn => {
     const allItems: VideoItem[] = [];
     let nextPageToken = '';
     let totalUnits = 0;
-    const maxItems = 100;
+    const maxItems = 5000;
 
     do {
       const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=demo${nextPageToken ? `&pageToken=${nextPageToken}` : ''}`;
