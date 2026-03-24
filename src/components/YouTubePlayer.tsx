@@ -117,7 +117,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
     }
   }, []);
 
-  const createPlayer = useCallback((vidId: string) => {
+  const createPlayer = useCallback((vidId: string, autoPlay: boolean = false) => {
     if (!containerRef.current) return;
 
     // Destroy existing player
@@ -142,7 +142,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       width: '0',
       videoId: vidId,
       playerVars: {
-        autoplay: 0,
+        autoplay: autoPlay ? 1 : 0,
         controls: 0,
         disablekb: 1,
         fs: 0,
@@ -155,7 +155,10 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       events: {
         onReady: (event) => {
           event.target.setVolume(volume);
-          // Don't auto-play here, let the isPlaying effect handle it
+          if (autoPlay) {
+            event.target.playVideo();
+            startProgressTracking();
+          }
         },
         onStateChange: (event) => {
           if (event.data === window.YT.PlayerState.ENDED) {
@@ -191,7 +194,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       apiReadyRef.current = true;
       if (videoId && currentVideoIdRef.current !== videoId) {
         currentVideoIdRef.current = videoId;
-        createPlayer(videoId);
+        createPlayer(videoId, isPlaying);
       }
     };
 
@@ -221,74 +224,33 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
     currentVideoIdRef.current = videoId;
 
     if (playerRef.current && apiReadyRef.current) {
-      // Player exists, just load the new video
+      // Player exists, load video and auto-play if needed
       try {
         playerRef.current.loadVideoById(videoId);
+        if (isPlaying) {
+          playerRef.current.playVideo();
+          startProgressTracking();
+        }
       } catch {
-        // If load fails, create new player
-        createPlayer(videoId);
+        createPlayer(videoId, isPlaying);
       }
     } else if (apiReadyRef.current || (window.YT && window.YT.Player)) {
-      createPlayer(videoId);
+      createPlayer(videoId, isPlaying);
     }
-  }, [videoId, createPlayer, stopProgressTracking]);
+  }, [videoId, createPlayer, stopProgressTracking, isPlaying]);
 
-  // Track if we need to auto-play after video loads
-  const shouldAutoPlayRef = useRef(false);
-  
-  // Handle play/pause - immediate response
-  useEffect(() => {
-    if (!playerRef.current) {
-      // If player not ready yet, mark that we should auto-play when ready
-      if (isPlaying) {
-        shouldAutoPlayRef.current = true;
-      }
-      return;
-    }
-
-    shouldAutoPlayRef.current = false;
-
-    try {
-      const state = playerRef.current.getPlayerState();
-      
-      if (isPlaying) {
-        if (state === window.YT.PlayerState.PLAYING) {
-          return; // Already playing
-        }
-        playerRef.current.playVideo();
-        startProgressTracking();
-      } else {
-        playerRef.current.pauseVideo();
-        stopProgressTracking();
-      }
-    } catch {
-      // Player not ready
-    }
-  }, [isPlaying, startProgressTracking, stopProgressTracking]);
-
-  // Auto-play when player becomes ready if we should be playing
+  // Handle play/pause - always force play when isPlaying is true
   useEffect(() => {
     if (!playerRef.current) return;
-    
-    const handleReady = () => {
-      if (shouldAutoPlayRef.current && isPlaying) {
-        try {
-          playerRef.current?.playVideo();
-          startProgressTracking();
-          shouldAutoPlayRef.current = false;
-        } catch {
-          // Ignore
-        }
-      }
-    };
-    
-    // Check immediately
-    handleReady();
-    
-    // Also check after a short delay in case player state wasn't ready yet
-    const timer = setTimeout(handleReady, 300);
-    return () => clearTimeout(timer);
-  }, [isPlaying, startProgressTracking]);
+
+    if (isPlaying) {
+      playerRef.current.playVideo();
+      startProgressTracking();
+    } else {
+      playerRef.current.pauseVideo();
+      stopProgressTracking();
+    }
+  }, [isPlaying, startProgressTracking, stopProgressTracking]);
 
   return (
     <div 
