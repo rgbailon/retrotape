@@ -221,12 +221,8 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
     const isSameVideo = previousVideoId === videoId;
     currentVideoIdRef.current = videoId;
 
+    // If same video, just handle play/pause without seeking
     if (isSameVideo && playerRef.current) {
-      if (isPlaying) {
-        playerRef.current.seekTo(0);
-        playerRef.current.playVideo();
-        startProgressTracking();
-      }
       return;
     }
 
