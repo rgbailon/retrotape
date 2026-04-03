@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useState } from 'react';
 
 interface YouTubePlayerProps {
   videoId: string;
@@ -68,7 +68,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
   const containerRef = useRef<HTMLDivElement>(null);
   const progressIntervalRef = useRef<number | null>(null);
   const currentVideoIdRef = useRef<string | null>(null);
-  const apiReadyRef = useRef(false);
+  const [apiReady, setApiReady] = useState(false);
 
   // Expose seekTo and setVolume methods via ref
   useImperativeHandle(ref, () => ({
@@ -181,7 +181,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
   // Load YouTube API
   useEffect(() => {
     if (window.YT && window.YT.Player) {
-      apiReadyRef.current = true;
+      setApiReady(true);
       return;
     }
 
@@ -191,11 +191,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
     firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
 
     window.onYouTubeIframeAPIReady = () => {
-      apiReadyRef.current = true;
-      if (videoId && currentVideoIdRef.current !== videoId) {
-        currentVideoIdRef.current = videoId;
-        createPlayer(videoId, isPlaying);
-      }
+      setApiReady(true);
     };
 
     return () => {
@@ -212,7 +208,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
 
   // Handle video changes - load new video without recreating player
   useEffect(() => {
-    if (!videoId) {
+    if (!videoId || !apiReady) {
       stopProgressTracking();
       return;
     }
@@ -226,7 +222,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       return;
     }
 
-    if (playerRef.current && apiReadyRef.current) {
+    if (playerRef.current) {
       try {
         playerRef.current.loadVideoById(videoId);
         if (isPlaying) {
@@ -236,10 +232,10 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       } catch {
         createPlayer(videoId, isPlaying);
       }
-    } else if (apiReadyRef.current || (window.YT && window.YT.Player)) {
+    } else {
       createPlayer(videoId, isPlaying);
     }
-  }, [videoId, createPlayer, stopProgressTracking, isPlaying]);
+  }, [videoId, createPlayer, stopProgressTracking, isPlaying, apiReady]);
 
   // Handle play/pause - always force play when isPlaying is true
   useEffect(() => {
