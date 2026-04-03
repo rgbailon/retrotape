@@ -98,21 +98,28 @@ export const CassettePlayer = ({
         <div className="flex justify-between items-center">
           {/* Left reel */}
           <div className="relative">
-            <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 border-4 border-gray-600 flex items-center justify-center shadow-lg ${
+            <div className={`w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-gray-600 via-gray-700 to-gray-900 border-4 border-gray-500 flex items-center justify-center shadow-lg ${
               isPlaying ? 'animate-spin' : ''
             }`} style={{ animationDuration: '2s' }}>
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-                  <div className="w-4 h-4 rounded-sm bg-gray-800" />
+              {/* Tape wound on reel */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-900 via-amber-800 to-amber-950" 
+                style={{ 
+                  background: `conic-gradient(from 0deg, #92400e ${100 - progressPercent * 0.8}%, #78716c ${100 - progressPercent * 0.8 + 5}%, #92400e ${100 - progressPercent * 0.6}%, #78716c ${100 - progressPercent * 0.6 + 5}%, #92400e ${100 - progressPercent * 0.4}%, #78716c ${100 - progressPercent * 0.4 + 5}%, #92400e ${100 - progressPercent * 0.2}%, #78716c ${100 - progressPercent * 0.2 + 5}%, #92400e ${100 - progressPercent}%, #78716c ${100 - progressPercent + 5}%)`,
+                }} 
+              />
+              {/* Spokes */}
+              <div className="absolute inset-1 rounded-full bg-transparent overflow-hidden">
+                <div className="absolute inset-0" style={{
+                  background: `repeating-conic-gradient(from 0deg, transparent 0deg 15deg, rgba(0,0,0,0.3) 15deg 18deg)`
+                }} />
+              </div>
+              {/* Inner reel hub */}
+              <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500 border-2 border-gray-600 flex items-center justify-center z-10 shadow-inner">
+                {/* Center spindle hole */}
+                <div className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 border border-gray-600 flex items-center justify-center">
+                  <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-gray-950" />
                 </div>
               </div>
-              {/* Tape on reel */}
-              <div 
-                className="absolute inset-2 rounded-full border-4 border-amber-700/50"
-                style={{ 
-                  background: `conic-gradient(from 0deg, #92400e ${100 - progressPercent}%, transparent ${100 - progressPercent}%)` 
-                }}
-              />
             </div>
           </div>
 
@@ -167,21 +174,28 @@ export const CassettePlayer = ({
 
           {/* Right reel */}
           <div className="relative">
-            <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 border-4 border-gray-600 flex items-center justify-center shadow-lg ${
+            <div className={`w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-gray-600 via-gray-700 to-gray-900 border-4 border-gray-500 flex items-center justify-center shadow-lg ${
               isPlaying ? 'animate-spin' : ''
             }`} style={{ animationDuration: '2s' }}>
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-                  <div className="w-4 h-4 rounded-sm bg-gray-800" />
+              {/* Tape wound on reel */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-900 via-amber-800 to-amber-950" 
+                style={{ 
+                  background: `conic-gradient(from 0deg, #92400e ${progressPercent * 0.8}%, #78716c ${progressPercent * 0.8 + 5}%, #92400e ${progressPercent * 0.6}%, #78716c ${progressPercent * 0.6 + 5}%, #92400e ${progressPercent * 0.4}%, #78716c ${progressPercent * 0.4 + 5}%, #92400e ${progressPercent * 0.2}%, #78716c ${progressPercent * 0.2 + 5}%, #92400e ${progressPercent}%, #78716c ${progressPercent + 5}%)`,
+                }} 
+              />
+              {/* Spokes */}
+              <div className="absolute inset-1 rounded-full bg-transparent overflow-hidden">
+                <div className="absolute inset-0" style={{
+                  background: `repeating-conic-gradient(from 0deg, transparent 0deg 15deg, rgba(0,0,0,0.3) 15deg 18deg)`
+                }} />
+              </div>
+              {/* Inner reel hub */}
+              <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500 border-2 border-gray-600 flex items-center justify-center z-10 shadow-inner">
+                {/* Center spindle hole */}
+                <div className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full bg-gradient-to-br from-gray-700 via-gray-800 to-gray-900 border border-gray-600 flex items-center justify-center">
+                  <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-gray-950" />
                 </div>
               </div>
-              {/* Tape on reel */}
-              <div 
-                className="absolute inset-2 rounded-full border-4 border-amber-700/50"
-                style={{ 
-                  background: `conic-gradient(from 0deg, #92400e ${progressPercent}%, transparent ${progressPercent}%)` 
-                }}
-              />
             </div>
           </div>
         </div>
