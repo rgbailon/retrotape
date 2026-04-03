@@ -217,11 +217,20 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       return;
     }
 
-    if (currentVideoIdRef.current === videoId) {
+    const isSameVideo = currentVideoIdRef.current === videoId;
+    currentVideoIdRef.current = videoId;
+
+    if (isSameVideo && playerRef.current && isPlaying) {
+      // Same video clicked again - force restart
+      playerRef.current.seekTo(0);
+      playerRef.current.playVideo();
+      startProgressTracking();
       return;
     }
 
-    currentVideoIdRef.current = videoId;
+    if (isSameVideo) {
+      return;
+    }
 
     if (playerRef.current && apiReadyRef.current) {
       // Player exists, load video and auto-play if needed

@@ -63,10 +63,13 @@ const App: React.FC = () => {
   const handlePlayMusicPlaylist = useCallback(async (playlistInfo: PlaylistSearchItem) => {
     setPlayingPlaylistId(playlistInfo.id);
     setLoadingPlaylistId(playlistInfo.id);
-    
+
+    // Check if this playlist is already playing - if so, restart it
+    const isAlreadyPlaying = playingPlaylistId === playlistInfo.id && playerState.currentPlaylist;
+
     try {
       const items = await getPlaylistItems(playlistInfo.id);
-      
+
       if (items.length > 0) {
         const tempPlaylist: Playlist = {
           id: `temp-${playlistInfo.id}`,
@@ -75,7 +78,7 @@ const App: React.FC = () => {
           items,
           createdAt: Date.now(),
         };
-        
+
         setPlayerState({
           isPlaying: true,
           currentPlaylist: tempPlaylist,
@@ -83,11 +86,18 @@ const App: React.FC = () => {
           progress: 0,
           duration: 0,
         });
+
+        // If was already playing same playlist, seek to beginning after short delay
+        if (isAlreadyPlaying && playerRef.current) {
+          setTimeout(() => {
+            playerRef.current?.seekTo(0);
+          }, 100);
+        }
       }
     } finally {
       setLoadingPlaylistId(undefined);
     }
-  }, [getPlaylistItems]);
+  }, [getPlaylistItems, playingPlaylistId, playerState.currentPlaylist]);
 
   // Save a music playlist from search results
   const handleSaveMusicPlaylist = useCallback(async (playlistInfo: PlaylistSearchItem) => {
@@ -237,7 +247,7 @@ const App: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="text-3xl">📼</div>
+              <img src="https://cdn-icons-png.flaticon.com/512/2106/2106892.png" alt="RetroTape" className="w-10 h-10" />
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent">RetroTape</h1>
                 <p className="text-xs text-gray-400">YouTube Music & Podcast Player</p>
@@ -251,7 +261,7 @@ const App: React.FC = () => {
                 className="px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-white text-sm transition-all border border-zinc-700"
                 title="Toggle player style"
               >
-                {playerStyle === 'cassette' ? '📼 Cassette' : '📻 Walkman'}
+                {playerStyle === 'cassette' ? 'Cassette' : 'Walkman'}
               </button>
               
               {/* Settings button */}
