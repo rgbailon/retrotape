@@ -159,16 +159,19 @@ const App: React.FC = () => {
   // Delete playlist
   const handleDeletePlaylist = useCallback((id: string) => {
     setPlaylists(prev => prev.filter(p => p.id !== id));
-    if (playerState.currentPlaylist?.id === id) {
-      setPlayerState({
-        isPlaying: false,
-        currentPlaylist: null,
-        currentIndex: 0,
-        progress: 0,
-        duration: 0,
-      });
-    }
-  }, [setPlaylists, playerState.currentPlaylist?.id]);
+    setPlayerState(prev => {
+      if (prev.currentPlaylist?.id === id) {
+        return {
+          isPlaying: false,
+          currentPlaylist: null,
+          currentIndex: 0,
+          progress: 0,
+          duration: 0,
+        };
+      }
+      return prev;
+    });
+  }, [setPlaylists]);
 
   // Player controls
   const handlePlayPause = useCallback(() => {
